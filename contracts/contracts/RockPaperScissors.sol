@@ -40,7 +40,7 @@ contract RockPaperScissors is Ownable {
 
     uint8 public deadline = 90;
     uint72 public betFee = 1 ether;
-    address public tokenAddress = 0x8301F2213c0eeD49a7E28Ae4c3e91722919B8B47;
+    address public tokenAddress;
 
     //Modifiers
     modifier notSamePlayer(address opponent) {
@@ -52,6 +52,10 @@ contract RockPaperScissors is Ownable {
     event GameCreated(address player1, address player2);
     event GameFinished(string message);
     event WithdrawalMade(string message);
+
+    constructor(address _tokenAddress) {
+        tokenAddress = _tokenAddress;
+    }
 
     //external Methods
     function createGame(
