@@ -7,8 +7,4 @@ contract PisiToken is ERC20 {
     constructor(uint256 initialSupply) ERC20("Pisi Token", "PISI") {
         _mint(msg.sender, initialSupply);
     }
-
-    function decimals() public view virtual override returns (uint8) {
-        return 0;
-    }
 }
