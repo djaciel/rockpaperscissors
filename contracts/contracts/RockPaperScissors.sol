@@ -64,7 +64,9 @@ contract RockPaperScissors is Ownable {
         bool _useWinings
     ) external payable notSamePlayer(_opponent) {
         require(
-            games[msg.sender].opponent == address(0),
+            games[msg.sender].opponent == address(0) ||
+                (games[msg.sender].opponent == _opponent &&
+                    games[msg.sender].move == Move.None),
             "You already have an open game"
         );
 
@@ -94,6 +96,15 @@ contract RockPaperScissors is Ownable {
             _move,
             uint32(block.timestamp + deadline)
         );
+
+        if (games[_opponent].opponent == address(0)) {
+            games[_opponent] = Game(
+                msg.sender,
+                Move.None,
+                uint32(block.timestamp + deadline)
+            );
+        }
+
         emit GameCreated(msg.sender, _opponent);
     }
 
@@ -109,11 +120,13 @@ contract RockPaperScissors is Ownable {
         if (player1.opponent == address(0) && player2.opponent == address(0)) {
             return "The game does not exist or is over";
         } else if (
-            player1.opponent == _opponent && player2.opponent == address(0)
+            player1.opponent == _opponent &&
+            (player2.opponent == address(0) && player2.move == Move.None)
         ) {
             return "The opponent has not yet made his move";
         } else if (
-            player1.opponent == address(0) && player2.opponent == msg.sender
+            (player1.opponent == address(0) && player1.move == Move.None) &&
+            player2.opponent == msg.sender
         ) {
             return "You haven't made your move yet";
         } else if (
@@ -163,6 +176,8 @@ contract RockPaperScissors is Ownable {
         require(userTokens[msg.sender] != 0, "You have no funds to withdraw");
 
         IERC20(tokenAddress).transfer(msg.sender, userTokens[msg.sender]);
+        userTokens[msg.sender] = 0;
+
         emit WithdrawalMade("Profits were sent to your address");
     }
 
