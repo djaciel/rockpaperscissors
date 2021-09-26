@@ -121,19 +121,22 @@ contract RockPaperScissors is Ownable {
             return "The game does not exist or is over";
         } else if (
             player1.opponent == _opponent &&
-            (player2.opponent == address(0) && player2.move == Move.None)
+            (player2.opponent == msg.sender && player2.move == Move.None)
         ) {
             return "The opponent has not yet made his move";
         } else if (
-            (player1.opponent == address(0) && player1.move == Move.None) &&
+            (player1.opponent == _opponent && player1.move == Move.None) &&
             player2.opponent == msg.sender
         ) {
             return "You haven't made your move yet";
         } else if (
-            player1.opponent == _opponent && player2.opponent == msg.sender
+            (player1.opponent == _opponent && player1.move != Move.None) &&
+            (player2.opponent == msg.sender && player2.move != Move.None)
         ) {
             return
                 "Both players have made their move, the game is ready to end";
+        } else {
+            return "Forbidden";
         }
     }
 
@@ -170,6 +173,10 @@ contract RockPaperScissors is Ownable {
 
     function getBalance() external view returns (uint72 tokensBalance) {
         return userTokens[msg.sender];
+    }
+
+    function getOpponent() external view returns (address opponent) {
+        return games[msg.sender].opponent;
     }
 
     function withdrawal() external {
