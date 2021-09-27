@@ -50,7 +50,7 @@ contract RockPaperScissors is Ownable {
 
     //Events
     event GameCreated(address player1, address player2);
-    event GameFinished(string message);
+    event GameFinished(string message, Move yourMove, Move opponentMove);
     event WithdrawalMade(string message);
 
     constructor(address _tokenAddress) {
@@ -161,7 +161,9 @@ contract RockPaperScissors is Ownable {
             delete games[_opponent];
 
             emit GameFinished(
-                "The opponent didn't make his move, the amount of the bet was saved in your earnings"
+                "The opponent didn't make his move, the amount of the bet was saved in your earnings",
+                player1.move,
+                player2.move
             );
         } else {
             _gameLogic(msg.sender, _opponent);
@@ -190,7 +192,7 @@ contract RockPaperScissors is Ownable {
 
     // Config Methods
     function setDeadline(uint8 _deadline) external onlyOwner {
-        require(_deadline >= 30, "The deadline cannot be less than 30 sec");
+        require(_deadline >= 5, "The deadline cannot be less than 5 sec");
         deadline = _deadline;
     }
 
@@ -224,17 +226,25 @@ contract RockPaperScissors is Ownable {
         if (player1.move > player2.move) {
             userTokens[_player1] = userTokens[_player1].add(betFee.mul(2));
             emit GameFinished(
-                "You won! Your reward was saved in your earnings"
+                "You won! Your reward was saved in your earnings",
+                player1.move,
+                player2.move
             );
         } else if (player1.move < player2.move) {
             userTokens[_player2] = userTokens[_player2].add(betFee.mul(2));
-            emit GameFinished("You lost, better luck next time");
+            emit GameFinished(
+                "You lost, better luck next time",
+                player1.move,
+                player2.move
+            );
         } else if (player1.move == player2.move) {
             userTokens[_player1] = userTokens[_player1].add(betFee);
             userTokens[_player2] = userTokens[_player2].add(betFee);
 
             emit GameFinished(
-                "Draw!, the bets were returned to the earnings of both players"
+                "Draw!, the bets were returned to the earnings of both players",
+                player1.move,
+                player2.move
             );
         }
     }
