@@ -4,6 +4,17 @@ const { assert, expect } = require('chai');
 const RockPaperScissors = artifacts.require('./RockPaperScissors.sol');
 const PisiToken = artifacts.require('./PisiToken.sol');
 
+const RPS = {
+  None: 0,
+  Rock: 1,
+  Paper: 2,
+  Scissors: 3,
+  0: 'None',
+  1: 'Rock',
+  2: 'Paper',
+  3: 'Scissors',
+};
+
 contract('RockPaperScissors', (accounts) => {
   const [alice, bob, charlie] = accounts;
   let rockPaperScissorsInstance;
@@ -109,16 +120,20 @@ contract('RockPaperScissors', (accounts) => {
       let gameStatusMessage;
 
       await expectRevert(
-        rockPaperScissorsInstance.createGame(bob, 1, true, { from: alice }),
+        rockPaperScissorsInstance.createGame(bob, RPS.Rock, true, {
+          from: alice,
+        }),
         'You need to deposit the bet, you do not have enough winnings to participate'
       );
 
-      await rockPaperScissorsInstance.createGame(bob, 2, false, {
+      await rockPaperScissorsInstance.createGame(bob, RPS.Rock, false, {
         from: alice,
       });
 
       await expectRevert(
-        rockPaperScissorsInstance.createGame(bob, 1, false, { from: alice }),
+        rockPaperScissorsInstance.createGame(bob, RPS.Rock, false, {
+          from: alice,
+        }),
         'You already have an open game'
       );
 
@@ -131,12 +146,16 @@ contract('RockPaperScissors', (accounts) => {
       assert.equal(gameStatusMessage, 'The opponent has not yet made his move');
 
       await expectRevert(
-        rockPaperScissorsInstance.createGame(bob, 1, false, { from: charlie }),
+        rockPaperScissorsInstance.createGame(bob, RPS.Rock, false, {
+          from: charlie,
+        }),
         'The opponent has an open game with someone else'
       );
 
       await expectRevert(
-        rockPaperScissorsInstance.createGame(charlie, 2, false, { from: bob }),
+        rockPaperScissorsInstance.createGame(charlie, RPS.Paper, false, {
+          from: bob,
+        }),
         'You already have an open game'
       );
 
@@ -151,7 +170,7 @@ contract('RockPaperScissors', (accounts) => {
       );
       assert.equal(gameStatusMessage, "You haven't made your move yet");
 
-      await rockPaperScissorsInstance.createGame(alice, 1, false, {
+      await rockPaperScissorsInstance.createGame(alice, RPS.Rock, false, {
         from: bob,
       });
 
@@ -169,7 +188,7 @@ contract('RockPaperScissors', (accounts) => {
         from: alice,
       });
 
-      await rockPaperScissorsInstance.createGame(bob, 2, false, {
+      await rockPaperScissorsInstance.createGame(bob, RPS.Paper, false, {
         from: alice,
       });
     });
@@ -178,8 +197,8 @@ contract('RockPaperScissors', (accounts) => {
       return new Promise((resolve) => setTimeout(resolve, ms));
     }
 
-    it('Alice win game', async () => {
-      await rockPaperScissorsInstance.createGame(alice, 1, false, {
+    it('Alice won game', async () => {
+      await rockPaperScissorsInstance.createGame(alice, RPS.Rock, false, {
         from: bob,
       });
 
@@ -188,17 +207,47 @@ contract('RockPaperScissors', (accounts) => {
       let result = await rockPaperScissorsInstance.finishGame(bob, {
         from: alice,
       });
-
-      console.log(result['logs'][0]['args']);
 
       assert.equal(
         result['logs'][0]['args']['message'],
         'You won! Your reward was saved in your earnings'
       );
+
+      const balance = web3.utils.fromWei(
+        await rockPaperScissorsInstance.getBalance.call(),
+        'ether'
+      );
+
+      const pisiTokenAliceBalance = web3.utils.fromWei(
+        await pisiToken.balanceOf(alice),
+        'ether'
+      );
+
+      const betFee = web3.utils.fromWei(
+        await rockPaperScissorsInstance.betFee.call(),
+        'ether'
+      );
+
+      const earnings = betFee * 2;
+
+      assert.equal(balance, earnings, 'The balance was not correct.');
+
+      await rockPaperScissorsInstance.withdrawal();
+
+      const newPisiTokenAliceBalance = web3.utils.fromWei(
+        await pisiToken.balanceOf(alice),
+        'ether'
+      );
+
+      assert.equal(
+        parseInt(newPisiTokenAliceBalance),
+        parseInt(earnings) + parseInt(pisiTokenAliceBalance),
+        'The balance was not correct.'
+      );
     });
 
-    it('Bob win game', async () => {
-      await rockPaperScissorsInstance.createGame(alice, 3, false, {
+    it('Bob won game', async () => {
+      await rockPaperScissorsInstance.createGame(alice, RPS.Scissors, false, {
         from: bob,
       });
 
@@ -207,8 +256,6 @@ contract('RockPaperScissors', (accounts) => {
       let result = await rockPaperScissorsInstance.finishGame(bob, {
         from: alice,
       });
-
-      console.log(result['logs'][0]['args']);
 
       assert.equal(
         result['logs'][0]['args']['message'],
@@ -217,7 +264,7 @@ contract('RockPaperScissors', (accounts) => {
     });
 
     it('Draw', async () => {
-      await rockPaperScissorsInstance.createGame(alice, 2, false, {
+      await rockPaperScissorsInstance.createGame(alice, RPS.Paper, false, {
         from: bob,
       });
 
@@ -226,8 +273,6 @@ contract('RockPaperScissors', (accounts) => {
       let result = await rockPaperScissorsInstance.finishGame(bob, {
         from: alice,
       });
-
-      console.log(result['logs'][0]['args']);
 
       assert.equal(
         result['logs'][0]['args']['message'],
